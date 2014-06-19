@@ -23,7 +23,7 @@ public class Cell {
 	}
 	//the toString method returns the position of the cell back
 	public String toString(){
-		return "My position X is " + positionX + " and my position Y is " + positionY;
+		return "My position X is " + positionX + " and my position Y is " + positionY + " My status is " +alive;
 	}
 	
 }
