@@ -7,96 +7,149 @@ import processing.core.*;
 // Timer is useless at the moment, better without
 public class Application extends PApplet{
 	
-	//Arraylist must be declared outside setup, else we cant access it
-	ArrayList<Cell> myCells = new ArrayList<Cell>();
-	// Prepare first state of Cells. Randomize is in setup
-	int randomX, randomY;
-	// Timer, refresh every 1000 (1 sec)
-	int refresh = 0;
-	int savedTime;
-	int myCellsSize;
+	int width = 400, height = 400;
+	int cellWidth = 10;
+	int numberOfCells = (width/cellWidth) * (height/cellWidth);
+	int row = width/cellWidth;
+	int columns = height/cellWidth;
+
+
+	int deadColor = 0x424242;
+	int lifeColor = 0x70FF4D;
+
+
+	//ArrayList<Cell> myCells = new ArrayList<Cell>();
+	// Two dimensional grid. One for the actual generation and the second
+	// for the next
+	Cell [][] myGrid = new Cell[row][columns];
 	
-	public void setup() {
-		savedTime = millis();
-		int height = 400;
-		int width = 400;
-	    size(height, width);
-	    background(255);
-	    stroke(0);
-	    
-	    // Making y number of Cells (in this example 40*40 = 1600 Cells)
-	    // 1 cell is 10x10
-	    // 390 cells are dead
-	    // 10 other are alive
-	    int y = 0;
-	    int numberOfCells = (height * width) / 100;
-	    while(y < numberOfCells){
-	    	myCells.add(new Cell(false));
-	    	y++;
-	    }
-	    println(myCells.size());
-	    myCellsSize = myCells.size();
-	    //Making grid in setup, not in draw because it is continuously redrawed
-	    for(int i = 0; i < width; i+=10){
-			  line(0, i, width, i);
-			  line(i, 0, i, height);
+	
+	public void setup(){
+		  //size of document
+		  frameRate(3);
+		  size(width, height);
+		  background(0xD9D9D9);
+		  //Making the grid layout
+		  for(int i = 0; i <= width; i += cellWidth){
+		    line(0,i,width,i);
+		    line(i, 0, i, height);
+		  }
+		  
+		  //Populate the whole grid with (dead) cells
+		  for(int i = 0; i < row; i++){
+		    for(int y = 0; y < columns; y++){
+		      myGrid[i][y] = new Cell(false);
+		      println("The variable i is " + i +" and y is" + y);
+		      if(myGrid[i][y].isAlive == false){
+		        fill(lifeColor);
+		      }else{
+		        fill(deadColor);
+		      }
+		    }
+		  }
+		  //Making the first generation
+		  //fill(#51F06E);
+		  for(int i = 0; i <= 9; i++){
+		        int randomX = floor(random(0, (width/10)));
+		        int randomY = floor(random(0, (height/10)));
+		        //Put this values into the array (and not for the 10 first like at the start)
+		        myGrid[randomX][randomY] = new Cell(true);
+		        // Make this numbers * 10 to fit in grid
+		        randomX *= 10;
+		        randomY *= 10;
+		        rect(randomX, randomY, 10, 10);
+		  }
 		}
-	 // First green fill of living cells
-	    fill(155, 253, 69);
-	 // Making initial (random) state of Cells
-	 // Search 10 times for a random number between 0 and width length
-	 // The first 10 cells of myCells are made alive and populate the grid
-	    for(int i = 0; i <= 10; i++){
-	    	randomX = floor(random(0, (width/10)));
-		    randomY = floor(random(0, (height/10)));
-		    // Make this numbers * 10 to fit in grid
-		    randomX *= 10;
-		    randomY *= 10;
-		    rect(randomX, randomY, 10, 10);
-		    Cell cell = myCells.get(i);
-		    cell.alive = true;
-		    cell.positionX = randomX;
-		    cell.positionY = randomY;
-		    //Print the actual position of the first cells
-		    println(cell);
-	    }
-	    
-	    
-	  }
 	
 	/** 
 	 * Draw method : where the magic happens
 	 * **/
 	  public void draw() {
-		  // Calculates how much time has passed
-		  int passedTime = millis() - savedTime;
-		  // Has 1 second passed ? 
-		/*  if(passedTime > refresh){
-			  for(int i = 0; i <= 10; i++){
-			    	randomX = floor(random(0, (width/10)));
-				    randomY = floor(random(0, (height/10)));
-				    // Make this numbers * 10 to fit in grid
-				    randomX *= 10;
-				    randomY *= 10;
-				    rect(randomX, randomY, 10, 10);
-			    } 
-			  savedTime = millis(); // Save the current time to restart the timer
-		  }*/
-		  
-		  //The other 390 cells must adapt their 'life' in function of the first 10 cells
-		  // Actually all the cells must now be updated
-		  for(int i = 0; i < myCellsSize; i++){
-			  println(myCells.get(i));
-			  Cell cell = myCells.get(i);
-			  //cell must check for neighbour
-			  
-		  }
-		  // Making of the grid. One rect is 10x10
-		  // If the cell is dead give it a red color
-		  //fill(253, 69, 69);
-		  //rect(80, 70, 10, 10);
-		  // If the cell is alive giv it a green color
-		  fill(155, 253, 69);
-		  rect(randomX, randomY, 10, 10);
+		  calculateNextGeneration();
+		  renderNewGeneration(); 
 	  }
+	  
+	  public void calculateNextGeneration(){
+		  for(int i = 0; i < row; i++){
+		    for(int y = 0; y < columns; y++){
+		      if(myGrid[i][y].isAlive == true){
+		        println(myGrid[i][y].isAlive + " I'm alive ! " + i + " " + y);
+		        int x = checkNeighbours(i, y);
+		        //Check return value and apply the rules of GOL
+		        if(x == 2 || x == 3){
+		            myGrid[i][y].isAlive = true;
+		         }
+		         if(myGrid[i][y].isAlive == true){
+		           if(x < 2){
+		           myGrid[i][y].isAlive = false;
+		           }
+		         }
+		         if(myGrid[i][y].isAlive == true){
+		           if(x > 3){
+		           myGrid[i][y].isAlive = false;
+		           }
+		         }
+		        // if isAlive is false
+		      }else{
+		        //println("I'm dead");
+		        int x = checkNeighbours(i, y);
+		        if(x == 2 || x == 3){
+		            myGrid[i][y].isAlive = true;
+		            //println("I become true !");
+		            
+		         }
+		      }
+		    }
+		  }
+		}
+		int checkNeighbours(int x, int y){
+		  int neighbours = 0;
+		  // Made y+2 and x+2 ipv +1 because i have ArrayIndexOutofBound
+		  if((x-1) < 0 || (y-1) < 0 || (y+2) > row || (x+2) > row){
+		   //println("I have in one of my places no neighbour");
+		    //println(x +" " +  y);
+		    
+		  }else{
+		     if(myGrid[x-1][y].isAlive == true){
+		      neighbours++;
+		    }
+		    if(myGrid[x-1][y+1].isAlive == true){
+		      neighbours++;
+		    }
+		    if(myGrid[x][y-1].isAlive == true){
+		      neighbours++;
+		    }
+		    if(myGrid[x+1][y-1].isAlive == true){
+		      neighbours++;
+		    }
+		    if(myGrid[x+1][y].isAlive == true){
+		      neighbours++;
+		    }
+		    if(myGrid[x+1][y+1].isAlive == true){
+		      neighbours++;
+		    }
+		    if(myGrid[x+1][y].isAlive == true){
+		      neighbours++;
+		    }
+		    if(myGrid[x-1][y-1].isAlive == true){
+		      neighbours++;
+		    }
+		    
+		  }
+		  return neighbours;
+		}
+
+		 void renderNewGeneration(){
+		  for(int i = 0; i < row; i++){
+		    for(int y = 0; y < columns; y++){
+		    if(myGrid[i][y].isAlive == true){
+		         fill(lifeColor);
+		      }else{
+		        fill(deadColor);
+		      }
+		      rect(i*cellWidth, y * cellWidth, cellWidth, cellWidth);
+		    }
+		  }
+		}
+	  
 }
